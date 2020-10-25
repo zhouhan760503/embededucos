@@ -368,7 +368,8 @@ void  OSIntExit (void)
         OSTCBHighRdyPtr = OSRdyList[OSPrioHighRdy].HeadPtr;     /* No ... get highest priority task ready-to-run        */
         if (OSTCBHighRdyPtr == OSTCBCurPtr) {                   /* Current task still the highest priority?             */
                                                                 /* Yes                                                  */
-            OS_TRACE_ISR_EXIT();
+			printf("preempt");									/* ÎÒ¼ÓµÄ*/
+			OS_TRACE_ISR_EXIT();
             CPU_INT_EN();
             return;
         }
@@ -465,6 +466,7 @@ void  OSSched (void)
     if (OSPrioHighRdy != (OS_CFG_PRIO_MAX - 1u)) {              /* Are we returning to idle?                              */
         OSTCBHighRdyPtr = OSRdyList[OSPrioHighRdy].HeadPtr;     /* No ... get highest priority task ready-to-run          */
         if (OSTCBHighRdyPtr == OSTCBCurPtr) {                   /* Current task still the highest priority?               */
+			printf("complete");
             CPU_INT_EN();                                       /* Yes                                                    */
             return;
         }

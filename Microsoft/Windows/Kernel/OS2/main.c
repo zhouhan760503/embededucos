@@ -37,6 +37,7 @@
 #include  <cpu.h>
 #include  <lib_mem.h>
 #include  <os.h>
+#include  <stdbool.h>
 
 #include  "app_cfg.h"
 
@@ -65,6 +66,77 @@ static  OS_STK  StartupTaskStk[APP_CFG_STARTUP_TASK_STK_SIZE];
 
 static  void  StartupTask (void  *p_arg);
 
+#define  TASK_STK_SIZE									   128u
+#define  TASK_START_PRIO								   5u
+
+INT32S TaskSet1[][2] = {
+		{1,3},
+		{3,6}
+	};
+
+INT32S TaskSet2[][2] = {
+	{1,3},
+	{3,6},
+	{4,9}
+	};
+
+INT32S TaskSet3[][2] = {
+	{5,20},
+	{5,20},
+	{1,8}
+};
+
+OS_STK task1_stk[TASK_STK_SIZE];
+OS_STK task2_stk[TASK_STK_SIZE];
+OS_STK task3_stk[TASK_STK_SIZE];
+
+static bool lock = false;
+
+static int commontotal = 0;
+
+static void task(void* p_args) {
+	INT32S* args = p_args;
+	const INT32S c = args[0];
+	const INT32S p = args[1];
+
+	int start = OSTimeGet();
+	int toDelay;
+	while (true)
+	{
+		while (OSTCBCur->CompTime < c) {
+		}
+		toDelay = p - (OSTimeGet() - start);
+		start += p;
+		OSTCBCur->CompTime = 0;
+		OSTimeDly(toDelay > 0 ? toDelay : 0);
+	}
+};
+
+static void task_with_lock(void* p_args) {
+	INT32S* args = p_args;
+	const INT32S c = args[0];
+	const INT32S p = args[1];
+
+	int start = OSTimeGet();
+	int toDelay;
+	while (lock)
+	{
+		printf("%2d lock is used, %2d delay for a round\n", OSTimeGet(), OSTCBCur->OSTCBId);
+		OSTimeDly(1);
+	}
+	lock = true;
+	commontotal += 1;
+	printf("\t total now is %2d \n",commontotal);
+	while (OSTCBCur->CompTime < c)
+	{
+		
+	}
+	toDelay = p - (OSTimeGet() - start);
+	start += p;
+	lock = false;
+	OSTCBCur->CompTime = 0;
+	OSTimeDly(toDelay > 0 ? toDelay : 0);
+};
 
 /*
 *********************************************************************************************************
@@ -88,23 +160,55 @@ int  main (void)
 #endif
 
 
-    CPU_IntInit();
+    //CPU_IntInit();
 
-    Mem_Init();                                                 /* Initialize Memory Managment Module                   */
-    CPU_IntDis();                                               /* Disable all Interrupts                               */
-    CPU_Init();                                                 /* Initialize the uC/CPU services                       */
+    //Mem_Init();                                                 /* Initialize Memory Managment Module                   */
+    //CPU_IntDis();                                               /* Disable all Interrupts                               */
+    //CPU_Init();                                                 /* Initialize the uC/CPU services                       */
 
     OSInit();                                                   /* Initialize uC/OS-II                                  */
 
-    OSTaskCreateExt( StartupTask,                               /* Create the startup task                              */
-                     0,
-                    &StartupTaskStk[APP_CFG_STARTUP_TASK_STK_SIZE - 1u],
-                     APP_CFG_STARTUP_TASK_PRIO,
-                     APP_CFG_STARTUP_TASK_PRIO,
-                    &StartupTaskStk[0u],
-                     APP_CFG_STARTUP_TASK_STK_SIZE,
-                     0u,
-                    (OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR));
+	printf("time state pid nid");
+
+    //OSTaskCreateExt( StartupTask,                               /* Create the startup task                              */
+    //                 0,
+    //                &StartupTaskStk[APP_CFG_STARTUP_TASK_STK_SIZE - 1u],
+    //                 APP_CFG_STARTUP_TASK_PRIO,
+    //                 APP_CFG_STARTUP_TASK_PRIO,
+    //                &StartupTaskStk[0u],
+    //                 APP_CFG_STARTUP_TASK_STK_SIZE,
+    //                 0u,
+    //                (OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR));
+
+	OSTaskCreateExt(task,
+		(void *)TaskSet3[0],
+		(OS_STK *)&task1_stk[TASK_STK_SIZE - 1],
+		TASK_START_PRIO * 3,
+		TASK_START_PRIO * 3,
+		(OS_STK *)&task1_stk[0],
+		TASK_STK_SIZE,
+		(void *)0,
+		OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+
+	OSTaskCreateExt(task,
+		(void *)TaskSet3[1],
+		(OS_STK *)&task2_stk[TASK_STK_SIZE - 1],
+	    TASK_START_PRIO * 2,
+		TASK_START_PRIO * 2,
+		(OS_STK *)&task2_stk[0],
+		TASK_STK_SIZE,
+		(void *)0,
+		OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
+
+	OSTaskCreateExt(task,
+		(void *)TaskSet3[2],
+		(OS_STK *)&task3_stk[TASK_STK_SIZE - 1],
+		TASK_START_PRIO * 3,
+		TASK_START_PRIO * 3,
+		(OS_STK *)&task3_stk[0],
+		TASK_STK_SIZE,
+		(void *)0,
+		OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
 
 #if OS_TASK_NAME_EN > 0u
     OSTaskNameSet(         APP_CFG_STARTUP_TASK_PRIO,

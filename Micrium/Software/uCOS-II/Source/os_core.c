@@ -715,6 +715,8 @@ void  OSIntExit (void)
 #endif
                     OSCtxSwCtr++;                          /* Keep track of the number of ctx switches */
 
+					printf("%2d preempted %2d %2d\n", OSTimeGet(), OSPrioCur, OSPrioHighRdy);
+
 #if OS_TASK_CREATE_EXT_EN > 0u
 #if defined(OS_TLS_TBL_SIZE) && (OS_TLS_TBL_SIZE > 0u)
                     OS_TLS_TaskSw();
@@ -938,6 +940,7 @@ void  OSStatInit (void)
 
 void  OSTimeTick (void)
 {
+	OSTCBCur->CompTime += 1;
     OS_TCB    *ptcb;
 #if OS_TICK_STEP_EN > 0u
     BOOLEAN    step;
@@ -1718,6 +1721,8 @@ void  OS_Sched (void)
                 OSTCBHighRdy->OSTCBCtxSwCtr++;         /* Inc. # of context switches to this task      */
 #endif
                 OSCtxSwCtr++;                          /* Increment context switch counter             */
+
+				printf("%2d complete %2d %2d\n", OSTimeGet(), OSPrioCur, OSPrioHighRdy);
 
 #if OS_TASK_CREATE_EXT_EN > 0u
 #if defined(OS_TLS_TBL_SIZE) && (OS_TLS_TBL_SIZE > 0u)

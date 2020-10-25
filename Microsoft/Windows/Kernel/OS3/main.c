@@ -169,3 +169,4 @@ static  void  StartupTask (void *p_arg)
     }
 }
 
+#define TASK_STK_SIZE 128

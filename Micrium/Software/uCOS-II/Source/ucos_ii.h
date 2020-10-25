@@ -633,6 +633,7 @@ typedef struct os_tcb {
 #if OS_TASK_REG_TBL_SIZE > 0u
     INT32U           OSTCBRegTbl[OS_TASK_REG_TBL_SIZE];
 #endif
+	INT8U			 CompTime;
 } OS_TCB;
 
 
